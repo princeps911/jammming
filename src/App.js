@@ -7,32 +7,38 @@ function App() {
   const [results, setResults] = useState([]);
   const [term, setTerm] = useState('');
 
-  // Check for token on load (after redirect)
+  // Check for token on load (after redirect with ?code=)
   useEffect(() => {
     const checkToken = async () => {
       const t = await getAccessToken();
-      if (t) setToken(t);
+      if (t) {
+        setToken(t);
+        console.log('Token acquired:', t);
+      }
     };
     checkToken();
   }, []);
 
   const handleSearch = async (e) => {
     e.preventDefault();
-    if (!token || !term) return;
+    if (!term) return;
     try {
       const tracks = await search(term);
       setResults(tracks);
     } catch (err) {
-      console.error(err);
       alert('Search failed');
     }
   };
 
+  // Show login if no token
   if (!token) {
     return (
       <div style={{ textAlign: 'center', marginTop: '100px' }}>
         <h1>Jammming</h1>
-        <button onClick={login} style={{ padding: '16px 32px', fontSize: '1.2rem' }}>
+        <button
+          onClick={login}
+          style={{ padding: '16px 32px', fontSize: '1.2rem' }}
+        >
           Log in to Spotify
         </button>
       </div>
@@ -48,7 +54,7 @@ function App() {
         <input
           type="text"
           value={term}
-          onChange={(e) => setTerm(e.target.value)}
+          onChange={e => setTerm(e.target.value)}
           placeholder="Search songs..."
           style={{ width: '70%', padding: '8px' }}
         />
@@ -56,13 +62,17 @@ function App() {
       </form>
 
       <h2>Results</h2>
-      <ul>
-        {results.map(t => (
-          <li key={t.id}>
-            <strong>{t.name}</strong> – {t.artist} ({t.album})
-          </li>
-        ))}
-      </ul>
+      {results.length === 0 ? (
+        <p>Type and search!</p>
+      ) : (
+        <ul>
+          {results.map(t => (
+            <li key={t.id}>
+              <strong>{t.name}</strong> – {t.artist} ({t.album})
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 }
