@@ -5,72 +5,64 @@ import { login, getAccessToken, search } from './util/Spotify';
 function App() {
   const [token, setToken] = useState('');
   const [results, setResults] = useState([]);
+  const [term, setTerm] = useState('');
 
-  // ---- 1. Grab token from URL on every load ----
+  // Check for token on load (after redirect)
   useEffect(() => {
-    const t = getAccessToken();
-    if (t) setToken(t);
+    const checkToken = async () => {
+      const t = await getAccessToken();
+      if (t) setToken(t);
+    };
+    checkToken();
   }, []);
 
-  // ---- 2. If no token → show login button ----
+  const handleSearch = async (e) => {
+    e.preventDefault();
+    if (!token || !term) return;
+    try {
+      const tracks = await search(term);
+      setResults(tracks);
+    } catch (err) {
+      console.error(err);
+      alert('Search failed');
+    }
+  };
+
   if (!token) {
     return (
       <div style={{ textAlign: 'center', marginTop: '100px' }}>
         <h1>Jammming</h1>
-        <button
-          onClick={login}
-          style={{ padding: '12px 24px', fontSize: '1.2rem' }}
-        >
+        <button onClick={login} style={{ padding: '16px 32px', fontSize: '1.2rem' }}>
           Log in to Spotify
         </button>
       </div>
     );
   }
 
-  // ---- 3. Search UI ----
-  const handleSearch = async (e) => {
-    e.preventDefault();
-    const term = e.target.term.value.trim();
-    if (!term) return;
-    try {
-      const tracks = await search(term, token);
-      setResults(tracks);
-    } catch (err) {
-      console.error(err);
-      alert('Search failed: ' + err.message);
-    }
-  };
-
   return (
     <div style={{ padding: '20px', maxWidth: '800px', margin: '0 auto' }}>
       <h1>Jammming</h1>
-      <p>Token Status: Logged in</p>
+      <p>Logged in</p>
 
       <form onSubmit={handleSearch} style={{ marginBottom: '20px' }}>
         <input
-          name="term"
           type="text"
-          placeholder="Search songs, artists..."
+          value={term}
+          onChange={(e) => setTerm(e.target.value)}
+          placeholder="Search songs..."
           style={{ width: '70%', padding: '8px' }}
-          required
         />
-        <button type="submit" style={{ padding: '8px 16px' }}>
-          Search
-        </button>
+        <button type="submit">Search</button>
       </form>
 
       <h2>Results</h2>
-      {results.length === 0 ? (
-        <p>No results yet – try searching!</p>
-      ) : (
-        <ul>
-          {results.map(t => (
-            <li key={t.id}>
-              <strong>{t.name}</strong> – {t.artist} ({t.album})
-            </li>
-          ))}
-        </ul>
-      )}
+      <ul>
+        {results.map(t => (
+          <li key={t.id}>
+            <strong>{t.name}</strong> – {t.artist} ({t.album})
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }
